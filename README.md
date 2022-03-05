@@ -1,7 +1,6 @@
-# AlignQ: Domain Alignment Quantization with ADMM-based Contrastive Relation Preservation
-Quantization, Domain Adaptation (Transfer Learning), Efficient Inference, Neural Network ([PDF](https://docs.google.com/presentation/d/19Pqz1WJYfiBvaYcWJWO8zRks63ZnlXU6NTADbT2wCZE/edit?usp=sharing))
-
-<img src="img/contributions.jpg" width="700" height="250">
+# AlignQ: Alignment Quantization with ADMM-based Correlation Preservation
+Quantization, Efficient Inference
+<img src="img/motivation.jpg" width="250" height="250">
 
 ## Requirements
 
