@@ -1,6 +1,6 @@
 # AlignQ: Alignment Quantization with ADMM-based Correlation Preservation
 Quantization, Efficient Inference
-<img src="img/motivation.jpg" width="250" height="250">
+<img src="img/motivation.pdf" width="250" height="250">
 
 ## Requirements
 
