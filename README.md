@@ -18,9 +18,9 @@ CVPR 2022 Accepted Paper - Quantization, Efficient Inference
 * e.g. 8-bit ResNet-20 on CIFAR-10.
 
 ```shell
-cd single_domain/resnet-20-cifar-10/cdf_alignment/
+cd single_domain/resnet-20-cifar-10/
 ```
-Pretrain and save models to the path single_domain/resnet-20-cifar-10/cdf_alignment/pretrained/.
+Pretrain and save models to the path single_domain/resnet-20-cifar-10/pretrained/.
 
 ```shell
 python3 main.py --job_dir "experiment/ours/resnet/t_8bit_pre32bit" --method "ours" --source_dir "pretrained" --source_file "res20_32bit/model_best.pt" --arch resnet --bitW 8 --abitW 8 --target_model "resnet20_quant" --source_model "resnet20" --num_epochs 200 --train_batch_size 128 --eval_batch_size 100 --lr 0.04 --lr_gamma 0.1 --lr_decay_steps [80, 120] --momentum 0.9 --weight_decay 0.0001 --lam 1 --lam2 4 --act_range 2 --print_freq 200
