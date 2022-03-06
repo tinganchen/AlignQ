@@ -15,7 +15,7 @@ CVPR 2022 Accepted Paper - Quantization, Efficient Inference, Data Alignment
 
 ### CDF alignment quantization
 
-* **Motivation**: our main contribution is to diminish the quantization error from the mismatch of training/testing data (non-i.i.d).
+* **Motivation**: our main contribution is to diminish the quantization error from the mismatch of training/testing data (non-i.i.d)
 
 * **Method**: align data to the same uniform space by CDF transformation
 
@@ -33,7 +33,7 @@ python3 main.py --job_dir "experiment/ours/resnet/t_8bit_pre32bit" --method "our
 
 ### CDF alignment quantization with ADMM-based correlation preservation
 
-* **Motivation**: to further improve the performance, we regularize the data correlations during the quantization process.
+* **Motivation**: to further improve the performance, we regularize the data correlations during the quantization process
 
 * **Method**: minimize the changes in data correlations by ADMM optimization
 
