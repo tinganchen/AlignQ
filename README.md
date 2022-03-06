@@ -1,5 +1,5 @@
 # AlignQ: Alignment Quantization with ADMM-based Correlation Preservation
-CVPR 2022 Accepted Paper - Quantization, Efficient Inference
+CVPR 2022 Accepted Paper - Quantization, Efficient Inference, Data Alignment
 
 <img src="img/motivation.png" width="500" height="250">
 
