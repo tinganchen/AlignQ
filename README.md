@@ -49,6 +49,8 @@ python3 main.py --src_data "dslr" --tgt_data "webcam" --train_split "True" --job
 ```
 
 ## Citation
+
+```shell
 @inproceedings{chen2022alignq,
   title={AlignQ: Alignment Quantization With ADMM-Based Correlation Preservation},
   author={Chen, Ting-An and Yang, De-Nian and Chen, Ming-Syan},
@@ -56,3 +58,4 @@ python3 main.py --src_data "dslr" --tgt_data "webcam" --train_split "True" --job
   pages={12538--12547},
   year={2022}
 }
+```
