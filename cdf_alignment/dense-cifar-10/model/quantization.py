@@ -44,20 +44,15 @@ class cdf(nn.Module):
 
     def forward(self, tensor):
         normal = torch.distributions.Normal(self.m, self.s)
-        cdf = normal.cdf(tensor)
-        #weight_cdf = (cdf - torch.min(cdf)) / (torch.max(cdf) - torch.min(cdf)) * 2 - 1
-        weight_cdf = cdf * 2 - 1
-        
-        if self.quant_src == 'a':
-            weight_cdf = weight_cdf * args.act_range
-            
+        weight_cdf = normal.cdf(tensor)
+ 
         weight_pdf = torch.exp(normal.log_prob(tensor)) * 2
         return weight_cdf, weight_pdf
     
 class weight_quantize_fn(nn.Module):
   def __init__(self, w_bit, stage):
     super(weight_quantize_fn, self).__init__()
-
+    #assert w_bit <= 8 or w_bit == 32
     self.w_bit = w_bit
         
     self.stage = stage
@@ -67,18 +62,20 @@ class weight_quantize_fn(nn.Module):
   def forward(self, x):
 
     if self.w_bit == 32: 
-      self.weight_cdf = x
+      weight_cdf = x
       weight_q = x
       return x
+
     else:
-      self.weight_cdf, self.weight_pdf = cdf(torch.mean(x), torch.std(x), 'w')(x)
-
-      weight_q = self.uniform_q(self.weight_cdf)
-
+      weight_cdf, weight_pdf = cdf(torch.mean(x), torch.std(x), 'w')(x)
+   
+      weight_q = self.uniform_q(weight_cdf) * 2 - 1
+      
+ 
       if self.w_bit == 32:
-          return self.weight_cdf
+          return weight_cdf
       else:
-          return weight_q # self.weight_reconstruct
+          return weight_q 
 
 
 class activation_quantize_fn(nn.Module):
@@ -98,13 +95,12 @@ class activation_quantize_fn(nn.Module):
       return x
     else:
       activation_cdf, activation_pdf = cdf(torch.zeros(1).to(device), torch.ones(1).to(device), 'a')(x)
-      activation_q = self.uniform_q(activation_cdf)
-      #self.activation_reconstruct = icdf(torch.zeros(1).to(device), torch.ones(1).to(device))(self.activation_q)
-      
+      activation_q = (self.uniform_q(activation_cdf) * 2 - 1) * args.act_range
+   
       if self.a_bit == 32:
           return activation_cdf
       else:
-          return activation_q# self.weight_reconstruct
+          return activation_q
     
 
 
@@ -120,7 +116,6 @@ def conv2d_Q_fn(w_bit, stage):
     def forward(self, input, order=None):
       
       weight_q = self.quantize_fn(self.weight)
-      # print(np.unique(weight_q.detach().numpy()))
       return F.conv2d(input, weight_q, self.bias, self.stride,
                       self.padding, self.dilation, self.groups)
 

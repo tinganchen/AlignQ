@@ -7,11 +7,7 @@ import torch.nn.functional as F
 import time
 import numpy as np
 
-from utils.options_office import args
-
-#from utils.gcn import GCN
-
-#from utils.admm import ADMM
+from utils.options import args
 
 device = torch.device(f"cuda:{args.gpus[0]}")
 
@@ -48,13 +44,8 @@ class cdf(nn.Module):
 
     def forward(self, tensor):
         normal = torch.distributions.Normal(self.m, self.s)
-        cdf = normal.cdf(tensor)
-        #weight_cdf = (cdf - torch.min(cdf)) / (torch.max(cdf) - torch.min(cdf)) * 2 - 1
-        weight_cdf = cdf * 2 - 1
-        
-        if self.quant_src == 'a':
-            weight_cdf = weight_cdf * args.act_range
-            
+        weight_cdf = normal.cdf(tensor)
+ 
         weight_pdf = torch.exp(normal.log_prob(tensor)) * 2
         return weight_cdf, weight_pdf
     
@@ -71,18 +62,21 @@ class weight_quantize_fn(nn.Module):
   def forward(self, x):
 
     if self.w_bit == 32: 
-      self.weight_cdf = x
-      self.weight_q = x
+      weight_cdf = x
+      weight_q = x
       return x
-    else:
-      self.weight_cdf, self.weight_pdf = cdf(torch.mean(x), torch.std(x), 'w')(x)
 
-      self.weight_q = self.uniform_q(self.weight_cdf)
+    else:
+      weight_cdf, weight_pdf = cdf(torch.mean(x), torch.std(x), 'w')(x)
+   
+      weight_q = self.uniform_q(weight_cdf) * 2 - 1
       
+ 
       if self.w_bit == 32:
-          return self.weight_cdf
+          return weight_cdf
       else:
-          return self.weight_q # self.weight_reconstruct
+          return weight_q 
+
 
 class activation_quantize_fn(nn.Module):
   def __init__(self, a_bit, stage):
@@ -101,64 +95,13 @@ class activation_quantize_fn(nn.Module):
       return x
     else:
       activation_cdf, activation_pdf = cdf(torch.zeros(1).to(device), torch.ones(1).to(device), 'a')(x)
-      activation_q = self.uniform_q(activation_cdf)
-      #self.activation_reconstruct = icdf(torch.zeros(1).to(device), torch.ones(1).to(device))(self.activation_q)
-      
+      activation_q = (self.uniform_q(activation_cdf) * 2 - 1) * args.act_range
+   
       if self.a_bit == 32:
           return activation_cdf
       else:
-          return activation_q# self.weight_reconstruct
+          return activation_q
     
-class activation_quantize_fn2(nn.Module):
-  def __init__(self, a_bit, stage, admm):
-    super(activation_quantize_fn2, self).__init__()
-    #assert a_bit <= 8 or a_bit == 32
-    self.a_bit = a_bit
-    self.stage = stage
-    
-    self.uniform_q = uniform_quantize(k = a_bit)
-    '''
-    self.embed_layer = GCN(nfeat = ndim, nhid = int(ndim/2), nclass = int(ndim/4), dropout = 0.8)
-    self.opt = ADMM()
-    '''
-    self.opt = admm
-    
-  def forward(self, x):
-    if self.a_bit == 32 and self.stage != 'align':
-        activation_cdf = x
-        activation_q = x
-        trans_loss = 0
-        return x, trans_loss
-    else:
-        activation_cdf, activation_pdf = cdf(torch.zeros(1).to(device), torch.ones(1).to(device), 'a')(x)
-        activation_q = self.uniform_q(activation_cdf)
-      
-        if args.method == 'ours' and self.a_bit < 32:
-            ## tansformation loss
-            # corr matrix before & after the transformation
-            x_feat = x.view(x.shape[0], -1)
-            x_trans_feat = activation_cdf.view(x.shape[0], -1)
-            
-            corr_mat = corr(x_feat, x_feat)
-            corr_mat_trans = corr(x_trans_feat, x_trans_feat)
-            
-            # admm optimization to minimize the discrepancy of the two corr matrices
-            D = corr_mat_trans - corr_mat
-            trans_loss = self.opt(D)
-        
-        else:
-            trans_loss = 0
-              
-
-        if self.a_bit == 32:
-            return activation_cdf, trans_loss
-        else:
-            return activation_q, trans_loss
-
-def corr(x, y):
-    x_std = (x - torch.mean(x, dim = 0)) / (torch.std(x, dim = 0)+1e-5)
-    y_std = (y - torch.mean(y, dim = 0)) / (torch.std(y, dim = 0)+1e-5)
-    return torch.matmul(x_std, torch.transpose(y_std, 0, 1)) / x_std.shape[1]
 
 
 def conv2d_Q_fn(w_bit, stage):
@@ -173,7 +116,6 @@ def conv2d_Q_fn(w_bit, stage):
     def forward(self, input, order=None):
       
       weight_q = self.quantize_fn(self.weight)
-
       return F.conv2d(input, weight_q, self.bias, self.stride,
                       self.padding, self.dilation, self.groups)
 
